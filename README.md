@@ -250,6 +250,17 @@ npx supabase db push --project-ref vwcjpbgufxmipmelahme
 
 Or copy the contents of `supabase/migrations/0001_init.sql` into the Supabase SQL editor.
 
+### Seed demo data (wipe + 500 random reports)
+
+**Danger:** this deletes *all* existing rows in `report_flags`, `reports`, and `vehicles`.
+
+- Option A — **Supabase SQL editor**: open `supabase/seed_random_reports.sql`, copy/paste into the SQL editor, run.
+- Option B — **Supabase CLI**:
+
+```bash
+npx supabase db execute --project-ref vwcjpbgufxmipmelahme --file supabase/seed_random_reports.sql
+```
+
 ## Resuming Development
 
 If picking this up fresh in a new session:

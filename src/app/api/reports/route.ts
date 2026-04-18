@@ -5,21 +5,34 @@ import { normalizePlate, validatePlate } from "@/lib/plate";
 import { isInSeattle } from "@/lib/seattle";
 import { hashReporter } from "@/lib/hash";
 import { BEHAVIORS } from "@/lib/behaviors";
+import { jitterLatLng } from "@/lib/geo-privacy";
 
 const VALID_CODES = new Set(BEHAVIORS.map((b) => b.code));
 
-const ReportSchema = z.object({
-  state:         z.string().default("WA"),
-  plate:         z.string().min(1),
-  make:          z.string().max(50).optional(),
-  model:         z.string().max(50).optional(),
-  color:         z.string().max(30).optional(),
-  behaviors:     z.array(z.string()).min(1).max(20),
-  lat:           z.number(),
-  lng:           z.number(),
-  location_text: z.string().max(200).optional(),
-  notes:         z.string().max(500).optional(),
-});
+const ReportSchema = z
+  .object({
+    state:         z.string().default("WA"),
+    plate:         z.string().min(1),
+    make:          z.string().max(50).optional(),
+    model:         z.string().max(50).optional(),
+    color:         z.string().max(30).optional(),
+    behaviors:     z.array(z.string()).min(1).max(20),
+    lat:           z.number().optional(),
+    lng:           z.number().optional(),
+    location_text: z.string().max(200).optional(),
+    notes:         z.string().max(500).optional(),
+  })
+  .superRefine((v, ctx) => {
+    const hasGps = typeof v.lat === "number" && typeof v.lng === "number";
+    const hasText = typeof v.location_text === "string" && v.location_text.trim().length > 0;
+    if (!hasGps && !hasText) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Provide either GPS location or nearby cross streets.",
+        path: ["location_text"],
+      });
+    }
+  });
 
 function getIp(req: NextRequest): string {
   return (
@@ -54,8 +67,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Unknown behaviors: ${invalidBehaviors.join(", ")}` }, { status: 400 });
   }
 
-  if (!isInSeattle(data.lat, data.lng)) {
-    return NextResponse.json({ error: "Location must be within Seattle area" }, { status: 400 });
+  const hasGps = typeof data.lat === "number" && typeof data.lng === "number";
+  if (hasGps && !isInSeattle(data.lat!, data.lng!)) {
+    return NextResponse.json({ error: "GPS location must be within Seattle area" }, { status: 400 });
   }
 
   const ip = getIp(req);
@@ -75,30 +89,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Rate limit exceeded. Try again later." }, { status: 429 });
   }
 
-  // Upsert vehicle
-  const { data: vehicle, error: vehicleErr } = await db
+  // Vehicle rows are immutable (no UPDATE policy), so avoid upsert (which can hit UPDATE on conflict).
+  const state = data.state.toUpperCase().trim() || "WA";
+  const { data: existingVehicle, error: existingErr } = await db
     .from("vehicles")
-    .upsert(
-      { state: data.state, plate, make: data.make ?? null, model: data.model ?? null, color: data.color ?? null },
-      { onConflict: "state,plate", ignoreDuplicates: false }
-    )
     .select("id")
-    .single();
+    .eq("state", state)
+    .eq("plate", plate)
+    .maybeSingle();
+
+  if (existingErr) {
+    console.error("vehicle lookup error:", existingErr);
+    return NextResponse.json({ error: "Failed to save vehicle" }, { status: 500 });
+  }
+
+  const { data: vehicle, error: vehicleErr } = existingVehicle
+    ? { data: existingVehicle, error: null }
+    : await db
+        .from("vehicles")
+        .insert({
+          state,
+          plate,
+          make: data.make ?? null,
+          model: data.model ?? null,
+          color: data.color ?? null,
+        })
+        .select("id")
+        .single();
 
   if (vehicleErr || !vehicle) {
-    console.error("vehicle upsert error:", vehicleErr);
+    console.error("vehicle insert error:", vehicleErr);
     return NextResponse.json({ error: "Failed to save vehicle" }, { status: 500 });
   }
 
   // Insert report
+  const jittered = hasGps ? jitterLatLng(data.lat!, data.lng!, { maxMeters: 350 }) : null;
   const { data: report, error: reportErr } = await db
     .from("reports")
     .insert({
       vehicle_id:    vehicle.id,
       behaviors:     data.behaviors,
-      lat:           data.lat,
-      lng:           data.lng,
-      location_text: data.location_text ?? null,
+      ...(jittered ? { lat: jittered.lat, lng: jittered.lng } : {}),
+      location_text: data.location_text?.trim() ? data.location_text.trim() : null,
       notes:         data.notes ?? null,
       reporter_hash: reporterHash,
     })
@@ -106,6 +138,15 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (reportErr || !report) {
+    // If the DB schema hasn't been migrated yet to allow null GPS,
+    // Supabase will throw a NOT NULL violation.
+    // 23502 = not_null_violation (Postgres).
+    if (reportErr && typeof reportErr === "object" && "code" in reportErr && (reportErr as { code?: string }).code === "23502") {
+      return NextResponse.json(
+        { error: "Server upgrade required: apply migration 0002_optional_gps.sql to allow cross-streets-only reports." },
+        { status: 503 }
+      );
+    }
     console.error("report insert error:", reportErr);
     return NextResponse.json({ error: "Failed to save report" }, { status: 500 });
   }

@@ -18,6 +18,7 @@ const schema = z.object({
   make:     z.string().max(50).optional(),
   model:    z.string().max(50).optional(),
   color:    z.string().max(30).optional(),
+  location_text: z.string().max(200).optional(),
   notes:    z.string().max(500).optional(),
 });
 
@@ -41,8 +42,10 @@ export function ReportForm() {
       setSubmitError("Select at least one bad behavior");
       return;
     }
-    if (lat === undefined || lng === undefined) {
-      setSubmitError("Location is required — use the button above to capture it");
+    const hasGps = lat !== undefined && lng !== undefined;
+    const hasText = typeof values.location_text === "string" && values.location_text.trim().length > 0;
+    if (!hasGps && !hasText) {
+      setSubmitError("Add either GPS location or nearby cross streets");
       return;
     }
     setSubmitError("");
@@ -59,7 +62,9 @@ export function ReportForm() {
         setSubmitError(typeof json.error === "string" ? json.error : "Submission failed");
         return;
       }
-      router.push(`/plate/WA/${values.plate.toUpperCase().replace(/[\s\-]/g, "")}?reported=1`);
+      const state = (values.state || "WA").toUpperCase().trim();
+      const plate = values.plate.toUpperCase().replace(/[\s\-]/g, "");
+      router.push(`/plate/${state}/${plate}?reported=1`);
     } catch {
       setSubmitError("Network error — please try again");
     } finally {
@@ -68,20 +73,20 @@ export function ReportForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-xl">
-      <div className="grid grid-cols-3 gap-3">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="space-y-1">
           <Label>State</Label>
-          <Input {...register("state")} defaultValue="WA" placeholder="WA" />
+          <Input {...register("state")} defaultValue="WA" placeholder="WA" className="uppercase" />
         </div>
-        <div className="col-span-2 space-y-1">
+        <div className="space-y-1 sm:col-span-2">
           <Label>License plate *</Label>
           <Input {...register("plate")} placeholder="ABC1234" className="uppercase" />
           {errors.plate && <p className="text-sm text-destructive">{errors.plate.message}</p>}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="space-y-1">
           <Label>Make</Label>
           <Input {...register("make")} placeholder="Toyota" />
@@ -105,12 +110,23 @@ export function ReportForm() {
       </div>
 
       <div className="space-y-2">
-        <Label>Location *</Label>
+        <Label>Location (GPS or cross streets) *</Label>
         <GpsCapture
           onCapture={(la, lo) => { setLat(la); setLng(lo); }}
           lat={lat}
           lng={lng}
         />
+        <p className="text-xs text-muted-foreground">
+          Privacy note: if you use GPS, the site stores a randomized, approximate location (not your exact coordinates).
+        </p>
+      </div>
+
+      <div className="space-y-1">
+        <Label>
+          Nearby cross streets <span className="text-muted-foreground text-xs">(optional instead of GPS)</span>
+        </Label>
+        <Input {...register("location_text")} placeholder="Pike St & 3rd Ave" />
+        {errors.location_text && <p className="text-sm text-destructive">{errors.location_text.message}</p>}
       </div>
 
       <div className="space-y-1">
@@ -121,7 +137,7 @@ export function ReportForm() {
 
       {submitError && <p className="text-sm text-destructive">{submitError}</p>}
 
-      <Button type="submit" disabled={submitting}>
+      <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
         {submitting ? "Submitting…" : "Submit report"}
       </Button>
     </form>

@@ -42,7 +42,7 @@ export function GpsCapture({ onCapture, lat, lng }: GpsCaptureProps) {
 
   return (
     <div className="space-y-2">
-      <Button type="button" variant="outline" onClick={capture} disabled={status === "loading"}>
+      <Button type="button" variant="outline" onClick={capture} disabled={status === "loading"} className="w-full sm:w-auto">
         {status === "loading" ? "Getting location…" : "Use my current location"}
       </Button>
       {status === "ok" && lat !== undefined && lng !== undefined && (

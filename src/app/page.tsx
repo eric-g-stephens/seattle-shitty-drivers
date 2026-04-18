@@ -20,13 +20,13 @@ export default async function HomePage() {
 
   return (
     <main>
-      <section className="bg-red-600 text-white py-20 px-4 text-center">
-        <h1 className="text-5xl font-extrabold mb-4">Seattle Shitty Drivers</h1>
-        <p className="text-xl mb-8 opacity-90 max-w-xl mx-auto">
+      <section className="bg-red-600 text-white py-14 sm:py-20 px-4 text-center">
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4">Seattle Shitty Drivers</h1>
+        <p className="text-base sm:text-xl mb-8 opacity-90 max-w-xl mx-auto leading-relaxed">
           Saw someone blow through a red light, buzz a cyclist, or just drive like an absolute menace?
           Report them. Name and shame.
         </p>
-        <Button asChild size="lg" variant="secondary">
+        <Button asChild size="lg" variant="secondary" className="w-full sm:w-auto">
           <Link href="/report">Report a driver</Link>
         </Button>
       </section>

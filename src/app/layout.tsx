@@ -10,26 +10,39 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen flex flex-col">
+      <body className="min-h-screen flex flex-col antialiased">
         {/* Satirical disclaimer banner — visible on every page */}
-        <div className="bg-yellow-50 border-b border-yellow-200 py-1.5 px-4 text-center text-xs text-yellow-800">
-          🎭 <strong>Satire & entertainment only.</strong> All reports are unverified user opinions. This site is not affiliated with any government or law enforcement agency and is not intended to be punitive.{" "}
-          <Link href="/about" className="underline hover:text-yellow-900">Full disclaimer</Link>
+        <div className="bg-yellow-50 border-b border-yellow-200 px-4 py-2 text-center text-xs text-yellow-900">
+          <span className="font-semibold">Satire & entertainment only.</span>{" "}
+          <span className="hidden sm:inline">
+            Reports are unverified user opinions and not intended to be punitive.
+          </span>{" "}
+          <Link href="/about" className="underline underline-offset-2 hover:text-yellow-950">
+            Disclaimer
+          </Link>
         </div>
 
-        <nav className="border-b bg-white">
+        <nav className="border-b bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 sticky top-0 z-40">
           <div className="container mx-auto px-4 h-14 flex items-center justify-between max-w-5xl">
             <Link href="/" className="font-bold text-red-600">
               Seattle Shitty Drivers
             </Link>
-            <div className="flex gap-4 text-sm">
-              <Link href="/leaderboard" className="text-gray-500 hover:text-gray-900 transition-colors">
+            <div className="flex items-center gap-3 text-sm">
+              <Link href="/leaderboard" className="text-muted-foreground hover:text-foreground transition-colors">
                 Leaderboard
               </Link>
-              <Link href="/report" className="text-gray-500 hover:text-gray-900 transition-colors">
+              <Link
+                href="/hotspots"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Hotspots
+              </Link>
+              <Link href="/report" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
                 Report
               </Link>
-              <Link href="/about" className="text-gray-500 hover:text-gray-900 transition-colors">
+              <Link href="/about" className="hidden sm:inline text-muted-foreground hover:text-foreground transition-colors">
                 About
               </Link>
             </div>
@@ -38,8 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <div className="flex-1">{children}</div>
 
-        <footer className="border-t mt-16 py-8 text-center text-xs text-gray-400 space-y-2 px-4">
-          <p className="font-medium text-gray-500">
+        <footer className="border-t mt-16 py-10 text-center text-xs text-muted-foreground space-y-2 px-4">
+          <p className="font-medium text-foreground/70">
             Seattle Shitty Drivers is a satirical website created for entertainment purposes only.
           </p>
           <p>

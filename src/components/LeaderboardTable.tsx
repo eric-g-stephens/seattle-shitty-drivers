@@ -23,15 +23,15 @@ export function LeaderboardTable({ rows, compact = false }: LeaderboardTableProp
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto -mx-4 px-4">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-muted-foreground">
             <th className="pb-2 pr-4 font-medium">Rank</th>
             <th className="pb-2 pr-4 font-medium">Plate</th>
-            {!compact && <th className="pb-2 pr-4 font-medium">Vehicle</th>}
+            {!compact && <th className="hidden pb-2 pr-4 font-medium md:table-cell">Vehicle</th>}
             <th className="pb-2 pr-4 font-medium">Reports</th>
-            {!compact && <th className="pb-2 font-medium">Last seen</th>}
+            {!compact && <th className="hidden pb-2 font-medium md:table-cell">Last seen</th>}
           </tr>
         </thead>
         <tbody>
@@ -41,13 +41,13 @@ export function LeaderboardTable({ rows, compact = false }: LeaderboardTableProp
               <td className="py-3 pr-4">
                 <Link
                   href={`/plate/${row.state}/${row.plate}`}
-                  className="font-mono font-bold hover:text-primary transition-colors"
+                  className="font-mono font-bold hover:text-primary transition-colors whitespace-nowrap"
                 >
                   {row.state} {row.plate}
                 </Link>
               </td>
               {!compact && (
-                <td className="py-3 pr-4 text-muted-foreground">
+                <td className="hidden py-3 pr-4 text-muted-foreground md:table-cell">
                   {[row.color, row.make, row.model].filter(Boolean).join(" ") || "—"}
                 </td>
               )}
@@ -55,7 +55,7 @@ export function LeaderboardTable({ rows, compact = false }: LeaderboardTableProp
                 <Badge variant="destructive">{row.report_count ?? 0}</Badge>
               </td>
               {!compact && (
-                <td className="py-3 text-muted-foreground">
+                <td className="hidden py-3 text-muted-foreground md:table-cell">
                   {row.last_report_at
                     ? new Date(row.last_report_at).toLocaleDateString()
                     : "—"}

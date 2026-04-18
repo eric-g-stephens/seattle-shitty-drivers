@@ -45,8 +45,8 @@ export type Database = {
           flag_count: number
           hidden: boolean
           id: string
-          lat: number
-          lng: number
+          lat: number | null
+          lng: number | null
           location_text: string | null
           notes: string | null
           reporter_hash: string
@@ -58,8 +58,8 @@ export type Database = {
           flag_count?: number
           hidden?: boolean
           id?: string
-          lat: number
-          lng: number
+          lat?: number | null
+          lng?: number | null
           location_text?: string | null
           notes?: string | null
           reporter_hash: string
@@ -71,8 +71,8 @@ export type Database = {
           flag_count?: number
           hidden?: boolean
           id?: string
-          lat?: number
-          lng?: number
+          lat?: number | null
+          lng?: number | null
           location_text?: string | null
           notes?: string | null
           reporter_hash?: string
